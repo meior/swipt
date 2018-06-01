@@ -1,4 +1,5 @@
 #include "Network.h"
+#include "iostream"
 
 /*
  * 创建邻接表对应的图
@@ -92,6 +93,7 @@ double Network::getCapacity(int start, int end)
     if (start == end)
         return (double)INF;
 
+    // 遍历链表
     node = mVexs[start].firstEdge;
     while (node != NULL)
     {
@@ -103,74 +105,130 @@ double Network::getCapacity(int start, int end)
     return (double)INF_N;
 }
 
+/**
+ * 获取所有与point节点直连的节点
+*/
+std::set<Point *> Network::getDirectNodes(Point *point)
+{
+    ENode *node;
+    std::set<Point *> result;
+
+    // 遍历链表
+    node = mVexs[getPosition(point->label)].firstEdge;
+    while (node != NULL)
+    {
+        result.insert(mVexs[node->ivex].data);
+        node = node->nextEdge;
+    }
+
+    return result;
+}
+
+/**
+ * 判断end节点是否在start节点两跳范围内
+*/
+bool Network::isTwoSteps(Point *start, Point *end)
+{
+    bool result = false;
+    // 获取节点索引
+    int startPos = getPosition(start->label);
+    int endPos = getPosition(end->label);
+
+    // 如果有直接联系的边，则返回true
+    if (getCapacity(startPos, endPos) > (double)INF_N)
+    {
+        result = true;
+    }
+    else
+    {
+        // 不能直达，则判断是否可以经过一个中间节点到达
+        std::set<Point *> directStart = getDirectNodes(start);
+        std::set<Point *> directEnd = getDirectNodes(end);
+
+        // 如果两个集合存在重复元素则表示可间接连通
+        std::set<Point *>::iterator it;
+        for (it = directStart.begin(); it != directStart.end(); it++)
+        {
+            if (directEnd.find(*it) != directEnd.end())
+            {
+                result = true;
+                break;
+            }
+        }
+    }
+
+    return result;
+}
+
 /*
  * 根据路由算法找出的路径更新各个链路的容量
  */
 void Network::updateCapacity(std::vector<std::stack<int>> streams)
 {
-    int i, j, k, l, m;
-    int len[MAX_NODE];             // 所有流的路径长度
-    int route[MAX_NODE][MAX_NODE]; // 所有流的路径经过的节点索引
-    std::set<int> nodes;           // 所有流的路径中涉及到的节点索引
-    ENode *node;                   // 需要更新容量的链路
+    int i;
+    ENode *node;                // 需要更新容量的链路
+    std::set<int> sendNodes;    // 所有流的路径中发射节点索引
+    std::set<int> recNodes;     // 所有流的路径中接收节点索引
+    std::set<int>::iterator it; // 集合迭代器
 
-    // 将路径节点的索引按信息流动顺序存入数组
-    for (i = 0, l = 0; i < slen; i++, l = 0)
+    // 将路径节点分类放入不同集合
+    for (i = 0; i < slen; i++)
     {
         std::stack<int> path = streams[i];
-
-        len[i] = path.size();
         while (!path.empty())
         {
             int index = path.top();
-            if (l > 0)
-                nodes.insert(index);
-            route[i][l++] = index;
+            if (path.size() > 1)
+            {
+                // 如果在接收节点集合中存在，则将其删除
+                it = recNodes.find(index);
+                if (it != recNodes.end())
+                    recNodes.erase(it);
+
+                // 插入到发射节点集合
+                sendNodes.insert(index);
+            }
+            else
+            {
+                // 插入到接收节点集合
+                if (sendNodes.find(index) == sendNodes.end())
+                    recNodes.insert(index);
+            }
             path.pop();
         }
     }
 
-    // 更新以节点为终点的链路容量，干扰源限定为两跳范围内
-    std::set<int>::iterator it;
-    for (it = nodes.begin(); it != nodes.end(); it++)
+    // 更新受干扰源影响的链路容量，限干扰源两跳范围内的节点
+    for (i = 0; i < mVexNum; i++)
     {
-        for (i = 0; i < mVexNum; i++)
+        // 仅更新起点不在发射节点集合中的链路
+        if (sendNodes.find(i) == sendNodes.end())
         {
-            if (*it != i)
+            node = mVexs[i].firstEdge;
+            while (node != NULL)
             {
-                // 找到以i为起点、*it为终点的链路
-                node = mVexs[i].firstEdge;
-                while (node != NULL)
+                // 仅更新终点不在信号流中的链路
+                if (sendNodes.find(node->ivex) == sendNodes.end() && recNodes.find(node->ivex) == recNodes.end())
                 {
-                    if (*it == node->ivex)
-                        break;
-                    node = node->nextEdge;
-                }
+                    Point *inf;   // 干扰源
+                    Point *infed; // 被干扰节点
+                    infed = mVexs[node->ivex].data;
 
-                // 当该链路是连通时才更新容量
-                if (node != NULL)
-                {
-                    // 找到*it两跳范围内存在干扰的节点
+                    // 在发射节点中寻找符合两跳范围的干扰源
                     std::set<Point *> infs;
-                    for (j = 0; j < slen; j++)
+                    for (it = sendNodes.begin(); it != sendNodes.end(); it++)
                     {
-                        // 确定*it在一条流中的位置
-                        for (k = 0; k < len[j]; k++)
-                        {
-                            if (*it == route[j][k])
-                                break;
-                        }
-
-                        // 从该位置向起点方向找两跳范围内的节点
-                        for (m = 0; m < k && m < 2; m++)
-                        {
-                            infs.insert(mVexs[route[j][k - m - 1]].data);
-                        }
+                        inf = mVexs[*it].data;
+                        if (isTwoSteps(inf, infed))
+                            infs.insert(inf);
                     }
 
                     // 根据干扰源重新计算信道容量
                     node->capacity = EData::calculate(mVexs[i].data, mVexs[*it].data, true, infs);
                 }
+
+                // 继续计算下一条链路
+                node = node->nextEdge;
             }
         }
     }
