@@ -1,0 +1,38 @@
+{
+    "editor.tabSize": 4,
+    "files.defaultLanguage": "cpp",
+    "code-runner.runInTerminal": true,
+    "code-runner.executorMap": {
+        "c": "cd $dir && clang $fileName -o $fileNameWithoutExt.exe -Wall -static-libgcc -fcolor-diagnostics --target=x86_64-w64-mingw -std=c11 && $fileNameWithoutExt.exe",
+        // "cpp": "cd $dir && clang++ $fileName -o $fileNameWithoutExt.exe -Wall -static-libgcc -fcolor-diagnostics --target=x86_64-w64-mingw -std=c++1z && $fileNameWithoutExt.exe",
+        // "cpp": "cd $dir && g++ -c $fileName -o $fileNameWithoutExt.o -D FREEGLUT_STATIC && g++ -o $fileNameWithoutExt.exe $fileNameWithoutExt.o -lfreeglut_static -lopengl32 -lglu32 -lwinmm -lgdi32 -static-libgcc -Wl,--subsystem,windows -Wall -std=c++1z && $fileNameWithoutExt.exe"
+        "cpp": "cd $dir && g++ -c $fileName -o $fileNameWithoutExt.o -D FREEGLUT_STATIC && g++ -o $fileNameWithoutExt.exe $fileNameWithoutExt.o -lfreeglut_static -lopengl32 -lglu32 -lwinmm -lgdi32 -static-libgcc -Wall -std=c++1z && $fileNameWithoutExt.exe"
+    },
+    "code-runner.saveFileBeforeRun": true,
+    "code-runner.preserveFocus": false,
+    "code-runner.clearPreviousOutput": false,
+    "C_Cpp.clang_format_sortIncludes": true,
+    "C_Cpp.intelliSenseEngine": "Default",
+    "C_Cpp.errorSquiggles": "Disabled",
+    "editor.formatOnType": true,
+    "editor.snippetSuggestions": "top",
+    "clang.cflags": [
+        "--target=x86_64-w64-mingw",
+        "-std=c11",
+        "-Wall"
+    ],
+    "clang.cxxflags": [
+        "--target=x86_64-w64-mingw",
+        "-std=c++1z",
+        "-Wall"
+    ],
+    "clang.completion.enable": false,
+    "files.associations": {
+        "cmath": "cpp",
+        "array": "cpp",
+        "initializer_list": "cpp",
+        "string_view": "cpp",
+        "utility": "cpp",
+        "ostream": "cpp"
+    }
+}
