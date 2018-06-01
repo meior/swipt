@@ -79,13 +79,15 @@ void initNetwork(int argc, char **argv)
 {
     // 构造网络节点数据
     Point::vlen = 0;
-    Point::vexs[Point::vlen++] = new Point(51, 84, 'A');
-    Point::vexs[Point::vlen++] = new Point(32, 25, 'B');
-    Point::vexs[Point::vlen++] = new Point(63, 49, 'C');
-    Point::vexs[Point::vlen++] = new Point(93, 95, 'D');
-    Point::vexs[Point::vlen++] = new Point(21, 97, 'E');
-    Point::vexs[Point::vlen++] = new Point(99, 80, 'F');
-    Point::vexs[Point::vlen++] = new Point(85, 16, 'G');
+    Point::vexs[Point::vlen++] = new Point(110, 18, 'A');
+    Point::vexs[Point::vlen++] = new Point(14, 17, 'B');
+    Point::vexs[Point::vlen++] = new Point(110, 70, 'C');
+    Point::vexs[Point::vlen++] = new Point(27, 40, 'D');
+    Point::vexs[Point::vlen++] = new Point(42, 102, 'E');
+    Point::vexs[Point::vlen++] = new Point(77, 37, 'F');
+    Point::vexs[Point::vlen++] = new Point(16, 70, 'G');
+    Point::vexs[Point::vlen++] = new Point(67, 70, 'H');
+    Point::vexs[Point::vlen++] = new Point(42, 46, 'I');
 
     // 获取是否更新容量标记
     if (argc >= 2 && *argv[1] == '0')
@@ -225,8 +227,14 @@ void display()
             info = "max capacity: " + std::to_string(capacity / 10e6) + "Mbps";
             glColor3f(0.0f, 0.0f, 0.0f);
         }
-        glRasterPos2i(window_w / 2 - 70, window_h - 60);
+        glRasterPos2i(window_w / 2 - 70, window_h - 55);
         drawString(info.data());
+        
+        // 绘制标题区与操作区分割线
+        Point *left = new Point(0, (window_h - 70) / 5, 'X');
+        Point *right = new Point(window_w / 5, (window_h - 70) / 5, 'Y');
+        glColor3f(0.0f, 0.0f, 0.0f);
+        drawLine(left, right);
 
         // 绘制网络节点
         if (i == routeSource || i == routeDest)
