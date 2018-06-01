@@ -23,31 +23,34 @@ Network::Network(Point *vexs[], int vlen, EData *edges[], int elen)
     // 初始化邻接表的边
     for (i = 0; i < mEdgNum; i++)
     {
-        // 读取边的起始节点和结束节点
-        c1 = edges[i]->start;
-        c2 = edges[i]->end;
-        capacity = edges[i]->capacity;
+        if (edges[i]->capacity > (double)INF_N)
+        {
+            // 读取边的起始节点和结束节点
+            c1 = edges[i]->start;
+            c2 = edges[i]->end;
+            capacity = edges[i]->capacity;
 
-        p1 = getPosition(c1->label);
-        p2 = getPosition(c2->label);
+            p1 = getPosition(c1->label);
+            p2 = getPosition(c2->label);
 
-        node1 = new ENode();
-        node1->ivex = p2;
-        node1->capacity = capacity;
-        // 将node1链接到p1所在链表的末尾
-        if (mVexs[p1].firstEdge == NULL)
-            mVexs[p1].firstEdge = node1;
-        else
-            linkLast(mVexs[p1].firstEdge, node1);
+            node1 = new ENode();
+            node1->ivex = p2;
+            node1->capacity = capacity;
+            // 将node1链接到p1所在链表的末尾
+            if (mVexs[p1].firstEdge == NULL)
+                mVexs[p1].firstEdge = node1;
+            else
+                linkLast(mVexs[p1].firstEdge, node1);
 
-        node2 = new ENode();
-        node2->ivex = p1;
-        node2->capacity = capacity;
-        // 将node2链接到p2所在链表的末尾
-        if (mVexs[p2].firstEdge == NULL)
-            mVexs[p2].firstEdge = node2;
-        else
-            linkLast(mVexs[p2].firstEdge, node2);
+            node2 = new ENode();
+            node2->ivex = p1;
+            node2->capacity = capacity;
+            // 将node2链接到p2所在链表的末尾
+            if (mVexs[p2].firstEdge == NULL)
+                mVexs[p2].firstEdge = node2;
+            else
+                linkLast(mVexs[p2].firstEdge, node2);
+        }
     }
 }
 
@@ -144,25 +147,30 @@ void Network::updateCapacity(std::vector<std::stack<int>> streams)
                     node = node->nextEdge;
                 }
 
-                // 找到*it两跳范围内存在干扰的节点
-                std::set<Point *> infs;
-                for (j = 0; j < slen; j++)
+                // 当该链路是连通时才更新容量
+                if (node != NULL)
                 {
-                    // 确定*it在一条流中的位置
-                    for (k = 0; k < len[j]; k++)
+                    // 找到*it两跳范围内存在干扰的节点
+                    std::set<Point *> infs;
+                    for (j = 0; j < slen; j++)
                     {
-                        if (*it == route[j][k])
-                            break;
+                        // 确定*it在一条流中的位置
+                        for (k = 0; k < len[j]; k++)
+                        {
+                            if (*it == route[j][k])
+                                break;
+                        }
+
+                        // 从该位置向起点方向找两跳范围内的节点
+                        for (m = 0; m < k && m < 2; m++)
+                        {
+                            infs.insert(mVexs[route[j][k - m - 1]].data);
+                        }
                     }
 
-                    // 从该位置向起点方向找两跳范围内的节点
-                    for (m = 0; m < k && m < 2; m++)
-                    {
-                        infs.insert(mVexs[route[j][k - m - 1]].data);
-                    }
+                    // 根据干扰源重新计算信道容量
+                    node->capacity = EData::calculate(mVexs[i].data, mVexs[*it].data, true, infs);
                 }
-
-                node->capacity = EData::calculate(mVexs[i].data, mVexs[*it].data, true, infs);
             }
         }
     }
