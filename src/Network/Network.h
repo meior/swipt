@@ -62,6 +62,8 @@ class Network
     std::set<Point *> getDirectNodes(Point *point);
     // 判断end节点是否在start节点两跳范围内
     bool isTwoSteps(Point *start, Point *end);
+    // 调整历史流路径
+    void fixStreamPath(std::vector<std::stack<int>> streams);
     // 更新各个链路的容量
     void updateCapacity(std::vector<std::stack<int>> streams);
     // 获取具体信号流路径

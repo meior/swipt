@@ -160,6 +160,73 @@ bool Network::isTwoSteps(Point *start, Point *end)
     return result;
 }
 
+/**
+ * 调整历史流路径
+*/
+void Network::fixStreamPath(std::vector<std::stack<int>> streams)
+{
+    int i, j, k;
+    int index;                     // 需要调整的流索引
+    std::stack<int> path;          // 路径节点索引栈
+    std::set<Point *> infs;        // 干扰源集合
+    int len[MAX_NODE];             // 每条流的路径长度
+    int route[MAX_NODE][MAX_NODE]; // 每条流的路径节点索引
+
+    path = streams[streams.size() - 1]; // 取最新加入的流路径
+    while (!path.empty())
+    {
+        // 除最后一个节点，其他节点均为干扰源
+        if (path.size() > 1)
+        {
+            infs.insert(mVexs[path.top()].data);
+            path.pop();
+        }
+    }
+
+    // 将路径节点栈转化为二维数组
+    for (i = 0, k = 0; i < slen - 1; i++)
+    {
+        path = streams[i];
+        while (!path.empty())
+        {
+            route[i][k++] = path.top();
+            path.pop();
+        }
+        len[i] = k;
+    }
+
+    // 找到容量最小的流
+    index = 0;
+    for (i = 0; i < slen - 1; i++)
+    {
+        double min = EData::calculate(mVexs[0].data, mVexs[1].data, true, infs);
+        for (j = 1; j < len[i]; j++)
+        {
+            double cap = EData::calculate(mVexs[j].data, mVexs[j + 1].data, true, infs);
+            if (cap < min)
+            {
+                min = cap;
+                index = i;
+            }
+        }
+    }
+
+    // 重新规划路径
+    Point *source = mVexs[route[index][0]].data;
+    Point *dest = mVexs[route[index][len[index] - 1]].data;
+    routing(source, dest, path);
+
+    // 调整流顺序并更新整个网络链路容量
+    for (i = slen - 1; i > index; i--)
+    {
+        streamPath[i - 1] = streamPath[i];
+    }
+    streamPath[slen - 1] = path;
+
+    if (needUpdate)
+        updateCapacity(streamPath);
+}
+
 /*
  * 根据路由算法找出的路径更新各个链路的容量
  */
