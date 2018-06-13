@@ -274,24 +274,27 @@ void Network::updateCapacity(std::vector<std::stack<int>> streams)
             node = mVexs[i].firstEdge;
             while (node != NULL)
             {
-                // 仅更新终点不在信号流中的链路
-                if (sendNodes.find(node->ivex) == sendNodes.end() && recNodes.find(node->ivex) == recNodes.end())
+                if (i != node->ivex)
                 {
-                    Point *inf;   // 干扰源
-                    Point *infed; // 被干扰节点
-                    infed = mVexs[node->ivex].data;
-
-                    // 在发射节点中寻找符合两跳范围的干扰源
-                    std::set<Point *> infs;
-                    for (it = sendNodes.begin(); it != sendNodes.end(); it++)
+                    // 仅更新终点不在信号流中的链路
+                    if (sendNodes.find(node->ivex) == sendNodes.end() && recNodes.find(node->ivex) == recNodes.end())
                     {
-                        inf = mVexs[*it].data;
-                        if (isTwoSteps(inf, infed))
-                            infs.insert(inf);
-                    }
+                        Point *inf;   // 干扰源
+                        Point *infed; // 被干扰节点
+                        infed = mVexs[node->ivex].data;
 
-                    // 根据干扰源重新计算信道容量
-                    node->capacity = EData::calculate(mVexs[i].data, mVexs[*it].data, true, infs);
+                        // 在发射节点中寻找符合两跳范围的干扰源
+                        std::set<Point *> infs;
+                        for (it = sendNodes.begin(); it != sendNodes.end(); it++)
+                        {
+                            inf = mVexs[*it].data;
+                            if (isTwoSteps(inf, infed))
+                                infs.insert(inf);
+                        }
+
+                        // 根据干扰源重新计算信道容量
+                        node->capacity = EData::calculate(mVexs[i].data, mVexs[*it].data, true, infs);
+                    }
                 }
 
                 // 继续计算下一条链路
