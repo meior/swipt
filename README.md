@@ -26,10 +26,10 @@ Using command line parameters to switch mode between 'INTERFERENCE MODE' and 'NO
 ```bash
 $ swipt.exe 1
 ```
-![swipt_interference](http://7xs1tt.com1.z0.glb.clouddn.com/swipt/interference.jpg)
+![swipt_interference](http://7xs1tt.com1.z0.glb.clouddn.com/swipt/inf.png)
 
 ### No-Interference mode
 ```bash
 $ swipt.exe 0
 ```
-![swipt_no-interference](http://7xs1tt.com1.z0.glb.clouddn.com/swipt/no-interference.jpg)
+![swipt_no-interference](http://7xs1tt.com1.z0.glb.clouddn.com/swipt/no-inf.png)
