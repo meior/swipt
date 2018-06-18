@@ -19,10 +19,11 @@ class EData
 #define INF_N -10e6        // 最小容量
 #define INF (~(0x1 << 31)) // 最大容量
   public:
-    Point *start;    // 链路的起点
-    Point *end;      // 链路的终点
-    bool working;    // 链路是否有流在传输
-    double capacity; // 链路的最大传输容量
+    Point *start;             // 链路的起点
+    Point *end;               // 链路的终点
+    double capacity;          // 链路的最大传输容量
+    std::set<int> used;       // 使用这条链路的流索引
+    float color[MAX_NODE][3]; // 不同路径中链路的颜色
 
     static int elen;                          // 链路数
     static EData *edges[MAX_NODE * MAX_NODE]; // 网络链路全局数组

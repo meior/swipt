@@ -1,5 +1,7 @@
 #include "./Network/Network.h"
 #include "GL/glut.h"
+#include "cstdlib"
+#include "ctime"
 #include "iostream"
 #include "string"
 #define MAX_CHAR 128
@@ -164,7 +166,7 @@ void paintPath(int value)
     std::stack<int> path;
 
     // 初始化链路标记
-    initEdges();
+    //initEdges();
 
     // 仅当路径不为空且有效才绘制
     if (!Network::capacity.empty() && Network::capacity[Network::slen - 1] != INF_N)
@@ -177,6 +179,12 @@ void paintPath(int value)
             path.pop();
         }
 
+        // 设定该路径统一的RGB颜色，各值随机产生
+        srand((int)time(0));
+        float red = (float)(rand() % 100) / 100;
+        float green = (float)(rand() % 100) / 100;
+        float blue = (float)(rand() % 100) / 100;
+
         // 依次取两个节点进行绘制
         for (i = 0; i < len - 1; i++)
         {
@@ -187,7 +195,14 @@ void paintPath(int value)
             for (j = 0; j < EData::elen; j++)
             {
                 if (EData::edges[j]->start == start && EData::edges[j]->end == end)
-                    EData::edges[j]->working = true;
+                {
+                    // 每条路径使用不同颜色以区分，存入路径对应的位置
+                    EData::edges[j]->color[Network::slen - 1][0] = red;
+                    EData::edges[j]->color[Network::slen - 1][1] = green;
+                    EData::edges[j]->color[Network::slen - 1][2] = blue;
+                    // 标记正在使用该链路的路径
+                    EData::edges[j]->used.insert(Network::slen - 1);
+                }
             }
         }
     }
@@ -207,46 +222,47 @@ void display()
 
     int i, j;
     std::string info; // 用于显示的文本信息
-    for (i = 0; i < Point::vlen; i++)
-    {
-        // 绘制模式标记文字
-        if (Network::needUpdate)
-            info = "INTERFERENCE MODE";
-        else
-            info = "NO-INTERFERENCE MODE";
-        glColor3f(0.0f, 1.0f, 0.0f);
-        glRasterPos2i(window_w / 2 - 70, window_h - 30);
-        drawString(info.data());
 
-        // 绘制最大传输容量，如果路径无效则提示不可达
-        if (Network::capacity.empty())
+    // 绘制模式标记文字
+    if (Network::needUpdate)
+        info = "INTERFERENCE MODE";
+    else
+        info = "NO-INTERFERENCE MODE";
+    glColor3f(0.0f, 1.0f, 0.0f);
+    glRasterPos2i(window_w / 2 - 70, window_h - 30);
+    drawString(info.data());
+
+    // 绘制最大传输容量，如果路径无效则提示不可达
+    if (Network::capacity.empty())
+    {
+        info = "max capacity: " + std::to_string((double)0.0) + "Mbps";
+        glColor3f(0.0f, 0.0f, 0.0f);
+    }
+    else
+    {
+        if (Network::capacity[Network::slen - 1] == INF_N)
         {
-            info = "max capacity: " + std::to_string((double)0.0) + "Mbps";
+            info = "unreachable !";
+            glColor3f(1.0f, 0.0f, 0.0f);
+        }
+        else
+        {
+            info = "max capacity: " + std::to_string(Network::capacity[Network::slen - 1] / 10e6) + "Mbps";
             glColor3f(0.0f, 0.0f, 0.0f);
         }
-        else
-        {
-            if (Network::capacity[Network::slen - 1] == INF_N)
-            {
-                info = "unreachable !";
-                glColor3f(1.0f, 0.0f, 0.0f);
-            }
-            else
-            {
-                info = "max capacity: " + std::to_string(Network::capacity[Network::slen - 1] / 10e6) + "Mbps";
-                glColor3f(0.0f, 0.0f, 0.0f);
-            }
-        }
-        glRasterPos2i(window_w / 2 - 70, window_h - 55);
-        drawString(info.data());
+    }
+    glRasterPos2i(window_w / 2 - 70, window_h - 55);
+    drawString(info.data());
 
-        // 绘制标题区与操作区分割线
-        Point *left = new Point(0, (window_h - 70) / 5, 'X');
-        Point *right = new Point(window_w / 5, (window_h - 70) / 5, 'Y');
-        glColor3f(0.0f, 0.0f, 0.0f);
-        drawLine(left, right);
+    // 绘制标题区与操作区分割线
+    Point *left = new Point(0, (window_h - 70) / 5, 'X');
+    Point *right = new Point(window_w / 5, (window_h - 70) / 5, 'Y');
+    glColor3f(0.0f, 0.0f, 0.0f);
+    drawLine(left, right);
 
-        // 绘制网络节点
+    // 绘制网络节点
+    for (i = 0; i < Point::vlen; i++)
+    {
         if (i == routeSource || i == routeDest)
             glColor3f(0.0f, 1.0f, 0.0f);
         else
@@ -259,13 +275,16 @@ void display()
         glColor3f(0.0f, 0.0f, 1.0f);
         glRasterPos2i(Point::vexs[i]->x * 5 - 30, Point::vexs[i]->y * 5 - 20);
         drawString(info.data());
+    }
 
-        // 绘制网络链路
+    // 绘制所有网络路径
+    for (i = 0; i < Network::slen; i++)
+    {
         for (j = 0; j < EData::elen; j++)
         {
-            if (EData::edges[j]->working)
+            if (EData::edges[j]->used.find(i) != EData::edges[j]->used.end())
             {
-                glColor4f(1.0f, 0.0f, 0.0f, 0.0f);
+                glColor3fv(EData::edges[j]->color[i]);
                 drawLine(EData::edges[j]->start, EData::edges[j]->end);
             }
         }

@@ -9,7 +9,6 @@ EData::EData(Point *start, Point *end)
     std::set<Point *> temp;
     this->start = start;
     this->end = end;
-    this->working = false;
     this->capacity = EData::calculate(start, end, false, temp);
 }
 
