@@ -184,7 +184,7 @@ void Network::fixStreamPath(std::vector<std::stack<int>> streams)
     }
 
     // 将路径节点栈转化为二维数组
-    for (i = 0, k = 0; i < slen - 1; i++)
+    for (i = 0, k = 0; i < Network::slen - 1; i++)
     {
         path = streams[i];
         while (!path.empty())
@@ -197,7 +197,7 @@ void Network::fixStreamPath(std::vector<std::stack<int>> streams)
 
     // 找到容量最小的流
     index = 0;
-    for (i = 0; i < slen - 1; i++)
+    for (i = 0; i < Network::slen - 1; i++)
     {
         double min = EData::calculate(mVexs[0].data, mVexs[1].data, true, infs);
         for (j = 1; j < len[i]; j++)
@@ -217,14 +217,14 @@ void Network::fixStreamPath(std::vector<std::stack<int>> streams)
     routing(source, dest, path);
 
     // 调整流顺序并更新整个网络链路容量
-    for (i = slen - 1; i > index; i--)
+    for (i = Network::slen - 1; i > index; i--)
     {
-        streamPath[i - 1] = streamPath[i];
+        Network::streamPath[i - 1] = Network::streamPath[i];
     }
-    streamPath[slen - 1] = path;
+    Network::streamPath[Network::slen - 1] = path;
 
-    if (needUpdate)
-        updateCapacity(streamPath);
+    if (Network::needUpdate)
+        updateCapacity(Network::streamPath);
 }
 
 /*
@@ -232,19 +232,25 @@ void Network::fixStreamPath(std::vector<std::stack<int>> streams)
  */
 void Network::updateCapacity(std::vector<std::stack<int>> streams)
 {
-    int i;
+    int i, j, k;
     ENode *node;                // 需要更新容量的链路
     std::set<int> sendNodes;    // 所有流的路径中发射节点索引
     std::set<int> recNodes;     // 所有流的路径中接收节点索引
     std::set<int>::iterator it; // 集合迭代器
 
-    // 将路径节点分类放入不同集合
-    for (i = 0; i < slen; i++)
+    // 节点信息预处理
+    for (i = 0; i < Network::slen; i++)
     {
+        // 路径节点索引数组
+        j = 0;
+        int route[MAX_NODE];
         std::stack<int> path = streams[i];
+
+        // 将路径节点分类放入不同集合
         while (!path.empty())
         {
             int index = path.top();
+            route[j++] = index;
             if (path.size() > 1)
             {
                 // 如果在接收节点集合中存在，则将其删除
@@ -262,6 +268,22 @@ void Network::updateCapacity(std::vector<std::stack<int>> streams)
                     recNodes.insert(index);
             }
             path.pop();
+        }
+
+        // 将流中链路所用容量减掉
+        for (k = 0; k < j - 1; k++)
+        {
+            node = mVexs[route[k]].firstEdge;
+            while (node != NULL)
+            {
+                if (node->ivex == route[k + 1])
+                {
+                    node->capacity -= Network::capacity[i];
+                    if (node->capacity <= (double)0.0)
+                        node->capacity = (double)INF_N;
+                }
+                node = node->nextEdge;
+            }
         }
     }
 
@@ -386,12 +408,13 @@ double Network::routing(Point *source, Point *dest, std::stack<int> &path)
 
     // 从前驱节点数组获取路径节点栈
     getPath(vs, ve, prev, path);
-    // 将当前信号流存入全局变量
-    slen++;
-    streamPath.push_back(path);
+    // 将当前信号流和容量存入全局变量
+    Network::slen++;
+    Network::capacity.push_back(dist[ve]);
+    Network::streamPath.push_back(path);
 
     // 计算干扰信号，更新各个链路容量
-    if (needUpdate)
-        updateCapacity(streamPath);
+    if (Network::needUpdate)
+        updateCapacity(Network::streamPath);
     return dist[ve];
 }

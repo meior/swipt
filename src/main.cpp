@@ -31,9 +31,9 @@ int routeDest = -1;
 std::vector<std::stack<int>> Network::streamPath;
 
 /**
- * 当前网络路径最大传输容量
+ * 路径最大传输容量
 */
-double capacity = 0.0;
+std::vector<double> Network::capacity;
 
 /**
  * 容量更新标记
@@ -97,6 +97,8 @@ void initNetwork(int argc, char **argv)
     EData::elen = Point::vlen * (Point::vlen - 1);
     initEdges();
 
+    // 初始化流数量
+    Network::slen = 0;
     // 构造网络图结构
     Network::net = new Network(Point::vexs, Point::vlen, EData::edges, EData::elen);
 }
@@ -164,8 +166,8 @@ void paintPath(int value)
     // 初始化链路标记
     initEdges();
 
-    // 仅当路径有效才绘制
-    if (capacity != INF_N)
+    // 仅当路径不为空且有效才绘制
+    if (!Network::capacity.empty() && Network::capacity[Network::slen - 1] != INF_N)
     {
         // 将节点栈转化为数组
         path = Network::streamPath[Network::slen - 1];
@@ -217,19 +219,27 @@ void display()
         drawString(info.data());
 
         // 绘制最大传输容量，如果路径无效则提示不可达
-        if (capacity == INF_N)
+        if (Network::capacity.empty())
         {
-            info = "unreachable !";
-            glColor3f(1.0f, 0.0f, 0.0f);
+            info = "max capacity: " + std::to_string((double)0.0) + "Mbps";
+            glColor3f(0.0f, 0.0f, 0.0f);
         }
         else
         {
-            info = "max capacity: " + std::to_string(capacity / 10e6) + "Mbps";
-            glColor3f(0.0f, 0.0f, 0.0f);
+            if (Network::capacity[Network::slen - 1] == INF_N)
+            {
+                info = "unreachable !";
+                glColor3f(1.0f, 0.0f, 0.0f);
+            }
+            else
+            {
+                info = "max capacity: " + std::to_string(Network::capacity[Network::slen - 1] / 10e6) + "Mbps";
+                glColor3f(0.0f, 0.0f, 0.0f);
+            }
         }
         glRasterPos2i(window_w / 2 - 70, window_h - 55);
         drawString(info.data());
-        
+
         // 绘制标题区与操作区分割线
         Point *left = new Point(0, (window_h - 70) / 5, 'X');
         Point *right = new Point(window_w / 5, (window_h - 70) / 5, 'Y');
@@ -324,7 +334,7 @@ void mouse(GLint button, GLint action, GLint mouse_x, GLint mouse_y)
             if (routeSource >= 0 && routeDest >= 0)
             {
                 std::stack<int> path;
-                capacity = Network::net->routing(Point::vexs[routeSource], Point::vexs[routeDest], path);
+                Network::net->routing(Point::vexs[routeSource], Point::vexs[routeDest], path);
 
                 // 延迟300ms绘制完整流路径
                 glutTimerFunc(300, paintPath, 1);

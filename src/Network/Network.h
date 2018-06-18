@@ -43,6 +43,7 @@ class Network
     static int slen;                                // 信号流数量
     static bool needUpdate;                         // 容量更新标记
     static Network *net;                            // 网络结构全局变量
+    static std::vector<double> capacity;            // 路径最大传输容量
     static std::vector<std::stack<int>> streamPath; // 路径节点索引栈
 
   public:
